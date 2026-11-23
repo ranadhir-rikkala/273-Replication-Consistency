@@ -1,0 +1,38 @@
+=== 1. Replication ===
+[t= 0.00s] client    write primary  stock = 10
+[t= 0.00s] primary   stock = 10, queued for secondary
+[t= 0.00s] client    read primary   -> stock = 10
+    [PASS] primary receives the new value 10
+[t= 0.00s] client    read secondary -> stock = 0
+[t= 0.41s] client    read secondary -> stock = 0
+[t= 0.81s] client    read secondary -> stock = 0
+[t= 1.01s] secondary stock = 10 (replicated from primary)
+[t= 1.21s] client    read secondary -> stock = 10
+    [PASS] secondary eventually receives 10
+[t= 1.21s] client    read primary   -> stock = 10
+[t= 1.21s] client    read secondary -> stock = 10
+    [PASS] both replicas return the same value
+
+=== 2. Stale read ===
+[t= 1.21s] primary   replication to secondary PAUSED
+[t= 1.21s] client    write primary  stock = 9
+[t= 1.21s] primary   stock = 9, queued for secondary
+[t= 1.21s] client    read primary   -> stock = 9
+    [PASS] primary returns 9
+[t= 1.21s] client    read secondary -> stock = 10
+[t= 1.72s] client    read secondary -> stock = 10
+[t= 2.22s] client    read secondary -> stock = 10
+[t= 2.72s] client    STALE READ: secondary returns 10 while primary has 9
+    [PASS] secondary temporarily returns the older value 10
+
+=== 3. Recovery and convergence ===
+[t= 2.72s] primary   replication to secondary RESUMED
+[t= 2.72s] client    read secondary -> stock = 10
+[t= 3.13s] client    read secondary -> stock = 10
+[t= 3.53s] client    read secondary -> stock = 10
+[t= 3.73s] secondary stock = 9 (replicated from primary)
+[t= 3.94s] client    read secondary -> stock = 9
+    [PASS] secondary eventually updates to 9
+[t= 3.94s] client    read primary   -> stock = 9
+[t= 3.94s] client    read secondary -> stock = 9
+    [PASS] both replicas return the same value again
